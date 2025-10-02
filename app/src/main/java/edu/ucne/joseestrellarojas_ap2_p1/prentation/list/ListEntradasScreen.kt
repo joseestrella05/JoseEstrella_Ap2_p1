@@ -23,6 +23,21 @@ fun ListEntradasScreen(
     val conteo by viewModel.conteo.collectAsState()
     val total by viewModel.total.collectAsState()
 
+    var clienteFiltro by remember { mutableStateOf("") }
+    var fechaFiltro by remember { mutableStateOf("") }
+    var filtrosVisibles by remember { mutableStateOf(false) }
+
+    LaunchedEffect(clienteFiltro, fechaFiltro) {
+        if (clienteFiltro.isBlank() && fechaFiltro.isBlank()) {
+            viewModel.cargarEntradas()
+        } else {
+            viewModel.filtrar(
+                cliente = clienteFiltro.ifBlank { null },
+                fecha = fechaFiltro.ifBlank { null }
+            )
+        }
+    }
+
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(title = { Text("Entradas de Huacales") })
@@ -35,10 +50,12 @@ fun ListEntradasScreen(
         bottomBar = {
             BottomAppBar {
                 Row(
-                    Modifier.fillMaxWidth().padding(12.dp),
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(12.dp),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text("Total registros: $conteo")
+                    Text("$conteo")
                     Text("= $${"%,.2f".format(total)}")
                 }
             }
@@ -48,18 +65,50 @@ fun ListEntradasScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(12.dp)
+                .padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Row(
-                Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                elevation = CardDefaults.cardElevation(2.dp)
             ) {
-                Text("Filtros")
-                Icon(imageVector = Icons.Default.FilterList, contentDescription = "Filtrar")
-            }
+                Column {
+                    Row(
+                        Modifier
+                            .fillMaxWidth()
+                            .clickable { filtrosVisibles = !filtrosVisibles }
+                            .padding(12.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("Filtros", style = MaterialTheme.typography.titleMedium)
+                        Icon(Icons.Default.FilterList, contentDescription = "Filtro")
+                    }
 
-            Spacer(Modifier.height(8.dp))
+                    if (filtrosVisibles) {
+                        Column(
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(12.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            OutlinedTextField(
+                                value = clienteFiltro,
+                                onValueChange = { clienteFiltro = it },
+                                label = { Text("Cliente") },
+                                modifier = Modifier.fillMaxWidth()
+                            )
+
+                            OutlinedTextField(
+                                value = fechaFiltro,
+                                onValueChange = { fechaFiltro = it },
+                                label = { Text("Fecha (YYYY-MM-DD)") },
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
+                    }
+                }
+            }
 
             LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 items(entradas) { entrada ->
